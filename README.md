@@ -10,6 +10,9 @@ This project demonstrates a phone number verification and prefilling user inform
 - Verify OTP entered by the user.
 - Fetch and display user information using Twilio Lookups API after successful OTP verification with a 90 seconds delay.
 
+## Identity Prefill - User Data
+![Identity Prefill - User Data](image.png)
+
 ## Prerequisites
 
 - [Twilio Account](https://twilio.com/try-twilio)
