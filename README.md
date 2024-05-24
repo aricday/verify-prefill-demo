@@ -1,4 +1,5 @@
 # Twilio Verify: Identity-Prefill-API Demo
+
 Demo application showing Twilio Verify and Lookup Identity-Prefill APIs
 
 This project demonstrates a phone number verification and prefilling user information using Twilio's Verify and Lookups APIs. Users can enter their phone number, receive an OTP, and verify their phone number. Upon successful verification, additional user details such as name and address will be fetched and displayed after a 90 seconds delay.
@@ -34,7 +35,7 @@ cd verify-prefill-demo
 ### Step 3: Create Verify Service
 
 1. Navigate to the [Twilio Verify](https://www.twilio.com/verify) page.
-2. Create a new Verify Service and note the `SERVICE_SID`.
+2. Create a new Verify Service and note the `VERIFY_SERVICE_SID`.
 
 ### Step 4: Create Lookups API Key
 
@@ -51,6 +52,7 @@ cd verify-prefill-demo
 
 ```javascript
 exports.handler = async function(context, event, callback) {
+
   const phoneNumber = event.phoneNumber;
   const serviceSid = context.VERIFY_SERVICE_SID;
 
@@ -62,10 +64,18 @@ exports.handler = async function(context, event, callback) {
     return;
   }
 
-  console.log('Service SID:', serviceSid);
-
   try {
-    // Use the Verify API V2 to start a verification process via SMS
+    // Validate phone number using Twilio Lookup API with Node.js library
+
+    const lookupResponse = await client.lookups.v2.phoneNumbers(phoneNumber).fetch();
+    if (!lookupResponse.valid) {
+
+      const message = 'Invalid phone number. Please enter a valid number in E.164 format.';
+      console.error(message, lookupResponse);
+      return callback(null, { success: false, message });
+    }
+
+    // Start verification if the phone number is valid
     const verification = await client.verify.v2.services(serviceSid)
       .verifications
       .create({ to: phoneNumber, channel: 'sms' });
@@ -174,7 +184,7 @@ Upload the `index.html` file to the **Assets** section in your Twilio Functions.
 <body>
   <h1>Phone Number Verification</h1>
   <form id="verification-form">
-    <label for="phone-number">Phone Number:</label>
+    <label for="phone-number">Phone Number - E.164:</label>
     <input type="tel" id="phone-number" name="phone-number" required>
     <button type="button" onclick="sendOTP()">Send OTP</button>
     <br><br>
@@ -183,8 +193,10 @@ Upload the `index.html` file to the **Assets** section in your Twilio Functions.
     <button type="button" onclick="verifyOTP()">Verify OTP</button>
   </form>
   <br>
+  <h2>Identity Lookup Results Below</h2>
+  <br>
   <div id="user-data" style="display:none;">
-    <h2>User Data</h2>
+    <h2>User Data: Results</h2>
     <p>First Name: <span id="first-name"></span></p>
     <p>Last Name: <span id="last-name"></span></p>
     <p>Address Line: <span id="address-line"></span></p>
