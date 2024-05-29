@@ -220,14 +220,20 @@ exports.handler = async function(context, event, callback) {
 
 Go to the **Environment Variables** section in your Twilio Functions and add the following:
 
-- `VERIFY_SERVICE_SID` = Your Verify Service SID
-- `LOOKUP_API_KEY` = Your Lookup API Key
-- `LOOKUP_API_SECRET` = Your Lookup API Secret
+| Variable             | Description | Required |
+| :------------------- | :---------- | :------- |
+| `VERIFY_SERVICE_SID` | Verify SID  | True     |
+| `LOOKUP_API_KEY`     | ApiKey      | True     |
+| `LOOKUP_API_SECRET`  | ApiSecret   | True     |
+
 
 Go to the **Dependencies** section in your Twilio Functions and add the following:
 
-- `node-fetch` : Version 3.3.2
-- `twilio` : Version 5.0.4
+| Package      | Version | 
+| :----------- | :------ |
+| `node-fetch` | 3.3.2   |
+| `twilio`     | 5.0.4   |
+
 
 ### Step 7: Upload HTML Asset
 
