@@ -2,7 +2,7 @@
 
 #### By Aric Day (Twilio SE)
 
-The Twilio Lookup API offers a set of packages that can help businesses provide a secure and seamless experience for initial user registration, login, consent capture and other business processes.  The Lookup API allows businesses to access user identity signals utilizing the provided phone numbers from the users.  TWilio Lookup packages are currently available for a variety of signals including: Carrier and Line Type Intelligence, SIM Swap, SMS Pumping Risk and Identity Match.
+The Twilio Lookup API offers a set of packages that can help businesses provide a secure and seamless experience for initial user registration, login, consent capture and other business processes.  The Lookup API allows businesses to access user identity signals utilizing the provided phone numbers from the users.  Twilio Lookup packages are currently available for a variety of signals including: Carrier and Line Type Intelligence, SIM Swap, SMS Pumping Risk and Identity Match.
 
 In today's digital age, user experience is paramount. Every additional step or friction point can deter potential customers, reduce conversion rates, and degrade the overall experience. To combat this, Twilio introduces an innovative feature within its Lookup API: **Identity Pre-Fill** in Private Beta. This powerful tool can revolutionize how businesses handle customer interactions, from onboarding to checkout, by pre-populating user data with verified information. Below, we discuss how this feature works, its potential benefits, and ways you can leverage it through a sample demo app.
 
