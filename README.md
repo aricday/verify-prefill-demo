@@ -67,282 +67,12 @@ This project demonstrates a phone number verification and prefilling user inform
    - **Benefit**: A smoother user experience leads to higher conversion rates because users can navigate through forms easily.
 
 
+## Pre-requisites
 
+Access is behind a flag during the pilot phase. 
+[Request Access Here](https://docs.google.com/forms/d/e/1FAIpQLSfXowQ9dUGgDNc_onA0yj2_Mo3tXxFWK67SpDfOZjONothBYQ/viewform?usp=send_form).
 
-## Prerequisites
-
-- [Twilio Account](https://twilio.com/try-twilio)
-- Twilio Verify and Lookups service credentials
-- Twilio Functions enabled
-
-
-## Getting Started
-
-### Step 1: Clone the Repository
-
-Clone the repository to your local machine:
-
-```sh
-git clone https://github.com/your-username/verify-prefill-demo.git
-cd verify-prefill-demo
-```
-
-### Step 2: Set Up Twilio Functions
-
-1. **Create a Twilio account** if you don’t already have one.
-2. Navigate to the [Twilio Console](https://console.twilio.com/).
-
-### Step 3: Create Verify Service
-
-1. Navigate to the [Twilio Verify](https://www.twilio.com/verify) page.
-2. Create a new Verify Service and note the `VERIFY_SERVICE_SID`.
-
-### Step 4: Create Lookups API Key
-
-1. Navigate to the [Twilio Console API Keys](https://www.twilio.com/console/project/api-keys).
-2. Create a new API Key and note the `LOOKUP_API_KEY` & `LOOKUP_API_SECRET`.
-
-### Step 5: Configure Twilio Functions
-
-1. Go to the **Functions** section in the Twilio Console.
-2. Click on **Create Service**, and name it `VerifyPrefillDemo`.
-3. Create the following Functions within the service:
-
-#### Function: `send-otp`
-
-```javascript
-exports.handler = async function(context, event, callback) {
-  const { phoneNumber } = event;
-  const { VERIFY_SERVICE_SID: serviceSid } = context;
-
-  // Ensure the Twilio client is initialized
-  const client = context.getTwilioClient();
-
-  if (!serviceSid) {
-    console.error('Missing VERIFY_SERVICE_SID');
-    return callback('Missing VERIFY_SERVICE_SID');
-  }
-
-  try {
-    // Validate phone number using Twilio Lookup API with Node.js library
-    const lookupResponse = await client.lookups.v2.phoneNumbers(phoneNumber).fetch();
-
-    if (!lookupResponse.valid) {
-      const message = 'Invalid phone number. Please enter a valid number in E.164 format.';
-      console.error(message, lookupResponse);
-      return callback(null, { success: false, message });
-    }
-
-    // Start verification if the phone number is valid
-    const verification = await client.verify.v2.services(serviceSid)
-      .verifications
-      .create({ to: phoneNumber, channel: 'sms' });
-
-    console.log('Verification response:', verification);
-
-    return callback(null, { success: true, message: `Verification sent to ${phoneNumber}` });
-  } catch (error) {
-    console.error('Error sending OTP:', error);
-    return callback(null, { success: false, message: error.message });
-  }
-};
-```
-
-#### Function: `verify-otp`
-
-```javascript
-exports.handler = async function(context, event, callback) {
-  const { phoneNumber, code } = event;
-  const { VERIFY_SERVICE_SID: serviceSid } = context;
-
-  const client = context.getTwilioClient();
-
-  if (!serviceSid) {
-    console.error('Missing VERIFY_SERVICE_SID');
-    return callback('Missing VERIFY_SERVICE_SID');
-  }
-
-  try {
-    // Verify the OTP using Twilio Verify API V2
-    const verificationCheck = await client.verify.v2.services(serviceSid)
-      .verificationChecks
-      .create({ to: phoneNumber, code });
-
-    console.log('Verification check response:', verificationCheck);
-
-    if (verificationCheck.status === 'approved') {
-      return callback(null, { success: true, verificationSid: verificationCheck.sid });
-    } 
-      return callback(null, { success: false, message: `Verification failed. Status: ${verificationCheck.status}` });
-    
-  } catch (error) {
-    console.error('Error verifying OTP:', error);
-    return callback(null, { success: false, message: error.message });
-  }
-};
-```
-
-#### Function: `fetch-user-data`
-
-```javascript
-exports.handler = async function (context, event, callback) {
-  const {phoneNumber} = event;
-  const {verificationSid} = event;
-  const lookupApiKey = context.LOOKUP_API_KEY;
-  const lookupApiSecret = context.LOOKUP_API_SECRET;
-
-  try {
-    // Use dynamic import to load the node-fetch module
-    const fetch = (await import('node-fetch')).default;
-
-    const lookupUrl = `https://lookups.twilio.com/v2/PhoneNumbers/${phoneNumber}?Fields=pre_fill&VerificationSid=${verificationSid}`;
-    const lookupResponse = await fetch(lookupUrl, {
-      headers: {
-        Authorization: `Basic ${Buffer.from(
-          `${lookupApiKey}:${lookupApiSecret}`
-        ).toString('base64')}`,
-      },
-    });
-
-    const lookupData = await lookupResponse.json();
-
-    return callback(null, { success: true, prefillData: lookupData.pre_fill });
-  } catch (error) {
-    console.error('Error fetching user data:', error);
-    return callback(null, { success: false, message: error.message });
-  }
-};
-```
-
-### Step 6: Configure Environment Variables & Dependencies
-
-Go to the **Environment Variables** section in your Twilio Functions and add the following:
-
-| Variable             | Description | Required |
-| :------------------- | :---------- | :------- |
-| `VERIFY_SERVICE_SID` | Verify SID  | True     |
-| `LOOKUP_API_KEY`     | ApiKey      | True     |
-| `LOOKUP_API_SECRET`  | ApiSecret   | True     |
-
-
-Go to the **Dependencies** section in your Twilio Functions and add the following:
-
-| Package      | Version | 
-| :----------- | :------ |
-| `node-fetch` | 3.3.2   |
-| `twilio`     | 5.0.4   |
-
-
-### Step 7: Upload HTML Asset
-
-Upload the `index.html` file to the **Assets** section in your Twilio Functions. Use the following content for `index.html`:
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verify Prefill Demo</title>
-</head>
-<body>
-  <h1>Phone Number Verification</h1>
-  <form id="verification-form">
-    <label for="phone-number">Phone Number - E.164:</label>
-    <input type="tel" id="phone-number" name="phone-number" required>
-    <button type="button" onclick="sendOTP()">Send OTP</button>
-    <br><br>
-    <label for="otp-code">OTP Code:</label>
-    <input type="text" id="otp-code" name="otp-code" required>
-    <button type="button" onclick="verifyOTP()">Verify OTP</button>
-  </form>
-  <br>
-  <h2>Identity Lookup Results Below</h2>
-  <br>
-  <div id="user-data" style="display:none;">
-    <h2>User Data: Results</h2>
-    <p>First Name: <span id="first-name"></span></p>
-    <p>Last Name: <span id="last-name"></span></p>
-    <p>Address Line: <span id="address-line"></span></p>
-    <p>Country Code: <span id="country-code"></span></p>
-    <p>State: <span id="state"></span></p>
-    <p>Postal Code: <span id="postal-code"></span></p>
-  </div>
-
-  <script>
-    async function sendOTP() {
-      const phoneNumber = document.getElementById('phone-number').value;
-      const response = await fetch('/send-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phoneNumber })
-      });
-      const result = await response.json();
-      alert(result.message);
-    }
-
-    async function verifyOTP() {
-      const phoneNumber = document.getElementById('phone-number').value;
-      const code = document.getElementById('otp-code').value;
-      const response = await fetch('/verify-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phoneNumber, code })
-      });
-      const result = await response.json();
-      if (result.success) {
-        alert('Verification successful. Fetching user data in 90 seconds...');
-        setTimeout(() => fetchUserData(phoneNumber, result.verificationSid), 90000); // 90 seconds delay
-      } else {
-        alert('Verification failed: ' + result.message);
-      }
-    }
-
-    async function fetchUserData(phoneNumber, verificationSid) {
-      const response = await fetch('/fetch-user-data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phoneNumber, verificationSid })
-      });
-      const result = await response.json();
-      if (result.success) {
-        displayUserData(result.prefillData);
-      } else {
-        alert('Fetching user data failed: ' + result.message);
-      }
-    }
-
-    function displayUserData(data) {
-      document.getElementById('first-name').innerText = data.first_name;
-      document.getElementById('last-name').innerText = data.last_name;
-      document.getElementById('address-line').innerText = data.address_line;
-      document.getElementById('country-code').innerText = data.country_code;
-      document.getElementById('state').innerText = data.state;
-      document.getElementById('postal-code').innerText = data.postal_code;
-      document.getElementById('user-data').style.display = 'block';
-    }
-  </script>
-</body>
-</html>
-```
-
-### Step 8: Test the Application
-
-1. Access your Twilio Function URL that serves the `index.html` file.
-2. Enter a phone number and click on "Send OTP."
-3. Enter the received OTP and click on "Verify OTP."
-4. Upon successful verification, wait for 90 seconds, and then user data should be displayed on the webpage.
-
-
-
-### Technical Details
-
+### Technical Considerations
 
 A few technical aspects to keep in mind:
 
@@ -352,13 +82,82 @@ A few technical aspects to keep in mind:
 
 - Use of this product requires the use of the Twilio Verify product. Customers using custom code implementations for verification are not eligible for the pilot.
 
+### Environment variables
 
+This project requires some environment variables to be set. A file named `.env` is used to store the values for those environment variables. To keep your tokens and secrets secure, make sure to not commit the `.env` file in git. When setting up the project with `twilio serverless:init ...` the Twilio CLI will create a `.gitignore` file that excludes `.env` from the version history.
+
+In your `.env` file, set the following values:
+
+| Variable             | Description | Required |
+| :------------------- | :---------- | :------- |
+| `VERIFY_SERVICE_SID` | Verify SID  | True     |
+
+### Function Parameters
+
+`/send-otp` expects the following parameters:
+
+| Parameter   | Description        | Required |
+| :---------- | :----------------- | :------- |
+| phoneNumber | E.164 Phone Number | True     |
+
+`/verify-otp` expects the following parameters:
+
+| Parameter   | Description        | Required |
+| :---------- | :----------------- | :------- |
+| phoneNumber | E.164 Phone Number | True     |
+| code        | Verify Code        | True     |
+
+`/fetch-user-data` expects the following parameters:
+
+| Parameter        | Description         | Required |
+| :--------------- | :------------------ | :------- |
+| verificationSid  | Approved Verify SID | True     |
+
+## Create a new project with the template
+
+1. Install the [Twilio CLI](https://www.twilio.com/docs/twilio-cli/quickstart#install-twilio-cli)
+2. Install the [serverless toolkit](https://www.twilio.com/docs/labs/serverless-toolkit/getting-started)
+
+```shell
+twilio plugins:install @twilio-labs/plugin-serverless
+```
+
+3. Initiate a new project
+
+```
+twilio serverless:init example --template=verify-prefill && cd example
+```
+
+4. Start the server with the [Twilio CLI](https://www.twilio.com/docs/twilio-cli/quickstart):
+
+```
+twilio serverless:start
+```
+
+5. Open the web page at <https://localhost:3000/index.html> and enter your phone number to test
+
+ℹ️ Check the developer console and terminal for any errors, make sure you've set your environment variables.
+
+## Deploying
+
+Deploy your functions and assets with either of the following commands. Note: you must run these commands from inside your project folder. [More details in the docs.](https://www.twilio.com/docs/labs/serverless-toolkit)
+
+With the [Twilio CLI](https://www.twilio.com/docs/twilio-cli/quickstart):
+
+```
+twilio serverless:deploy
+```
+
+## Test the Application
+
+1. Access your Twilio Function URL that serves the `index.html` file.
+2. Enter a phone number and click on "Send OTP."
+3. Enter the received OTP and click on "Verify OTP."
+4. Upon successful verification, wait for 90 seconds, and then user data should be displayed on the webpage.
 
 ### Conclusion
 
-
 Identity Pre-Fill is a game-changer for businesses looking to enhance user experiences and streamline processes. By reducing the effort required to fill out forms and ensuring data accuracy while speeding up interactions, you can significantly improve customer satisfaction and conversion rates.
-
 
 
 #### Learn More
@@ -366,8 +165,6 @@ Identity Pre-Fill is a game-changer for businesses looking to enhance user exper
 For detailed documentation and more information on Identity Pre-Fill, visit the [Twilio Lookup API documentation](https://www.twilio.com/docs/lookup/api).
 
 
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
