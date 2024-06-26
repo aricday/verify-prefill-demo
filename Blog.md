@@ -78,9 +78,7 @@ To showcase these benefits, we've created a demo app called [Verify Prefill Demo
 4. **Fetch and Prefill Data**: Upon successful verification, the app fetches the user’s first name, last name, and address using the Lookup API and automatically fills in the fields.
 
 
-
 Try the [Verify Prefill Demo](https://github.com/aricday/verify-prefill-demo) on GitHub to see how easy it is to integrate this powerful feature into your applications!
-
 
 
 ### Technical Details
